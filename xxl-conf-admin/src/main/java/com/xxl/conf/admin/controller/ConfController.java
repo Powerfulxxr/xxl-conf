@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * 配置管理
- *xxr
+ *
  * @author xuxueli
  */
 @Controller
