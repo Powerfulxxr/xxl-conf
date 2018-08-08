@@ -59,10 +59,11 @@ public class ConfController {
 	public Map<String, Object> pageList(HttpServletRequest request,
 										@RequestParam(required = false, defaultValue = "0") int start,
 										@RequestParam(required = false, defaultValue = "10") int length,
+										String env,
 										String appname,
 										String key) {
 		XxlConfUser loginUser = (XxlConfUser) request.getAttribute(LoginService.LOGIN_IDENTITY);
-		return xxlConfNodeService.pageList(start, length, appname, key, loginUser);
+		return xxlConfNodeService.pageList(start, length, env, appname, key, loginUser);
 	}
 	
 	/**
@@ -71,9 +72,9 @@ public class ConfController {
 	 */
 	@RequestMapping("/delete")
 	@ResponseBody
-	public ReturnT<String> delete(HttpServletRequest request, String key){
+	public ReturnT<String> delete(HttpServletRequest request, String env, String key){
 		XxlConfUser loginUser = (XxlConfUser) request.getAttribute(LoginService.LOGIN_IDENTITY);
-		return xxlConfNodeService.delete(key, loginUser);
+		return xxlConfNodeService.delete(env, key, loginUser);
 	}
 
 	/**
@@ -97,5 +98,14 @@ public class ConfController {
 		XxlConfUser loginUser = (XxlConfUser) request.getAttribute(LoginService.LOGIN_IDENTITY);
 		return xxlConfNodeService.update(xxlConfNode, loginUser);
 	}
-	
+
+	@RequestMapping("/syncConf")
+	@ResponseBody
+	public ReturnT<String> syncConf(HttpServletRequest request,
+										String env,
+										String appname) {
+		XxlConfUser loginUser = (XxlConfUser) request.getAttribute(LoginService.LOGIN_IDENTITY);
+		return xxlConfNodeService.syncConf(env, appname, loginUser);
+	}
+
 }

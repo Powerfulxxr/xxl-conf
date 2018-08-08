@@ -6,7 +6,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,17 +50,23 @@ public class XxlZkClient {
 	private static Logger logger = LoggerFactory.getLogger(XxlZkClient.class);
 
 
-	private String zkServer;
+	private String zkaddress;
+	private String zkpath;
+	private String zkdigest;
 	private Watcher watcher;	// watcher(One-time trigger)
 
-	public XxlZkClient(String zkServer, Watcher watcher) {
-		this.zkServer = zkServer;
+
+	public XxlZkClient(String zkaddress, String zkpath, String zkdigest, Watcher watcher) {
+
+		this.zkaddress = zkaddress;
+		this.zkpath = zkpath;
+		this.zkdigest = zkdigest;
 		this.watcher = watcher;
 
 		// reconnect when expire
-		if (watcher == null) {
+		if (this.watcher == null) {
 			// watcher(One-time trigger)
-			watcher = new Watcher() {
+			this.watcher = new Watcher() {
 				@Override
 				public void process(WatchedEvent watchedEvent) {
 					logger.info(">>>>>>>>>> xxl-conf: watcher:{}", watchedEvent);
@@ -75,6 +80,7 @@ public class XxlZkClient {
 			};
 		}
 
+		getClient();
 	}
 
 	// ------------------------------ zookeeper client ------------------------------
@@ -86,7 +92,14 @@ public class XxlZkClient {
 				if (INSTANCE_INIT_LOCK.tryLock(2, TimeUnit.SECONDS)) {
 					if (zooKeeper==null) {		// 二次校验，防止并发创建client
 						try {
-							zooKeeper = new ZooKeeper(zkServer, 10000, watcher);
+							zooKeeper = new ZooKeeper(zkaddress, 10000, watcher);		// TODO，本地变量方式，成功才会赋值
+							if (zkdigest!=null && zkdigest.trim().length()>0) {
+								zooKeeper.addAuthInfo("digest",zkdigest.getBytes());		// like "account:password"
+							}
+
+							zooKeeper.exists(zkpath, false);	// sync
+						} catch (Exception e) {
+							logger.error(e.getMessage(), e);
 						} finally {
 							INSTANCE_INIT_LOCK.unlock();
 						}
@@ -94,8 +107,6 @@ public class XxlZkClient {
 					}
 				}
 			} catch (InterruptedException e) {
-				logger.error(e.getMessage(), e);
-			} catch (IOException e) {
 				logger.error(e.getMessage(), e);
 			}
 		}
@@ -125,7 +136,7 @@ public class XxlZkClient {
 	 *
 	 * @param path
 	 */
-	private Stat createPatnWithParent(String path){
+	private Stat createPathWithParent(String path){
 		// valid
 		if (path==null || path.trim().length()==0) {
 			return null;
@@ -139,7 +150,7 @@ public class XxlZkClient {
 					String parentPath = path.substring(0, path.lastIndexOf("/"));
 					Stat parentStat = getClient().exists(parentPath, true);
 					if (parentStat == null) {
-						createPatnWithParent(parentPath);
+						createPathWithParent(parentPath);
 					}
 				}
 				// create desc node path
@@ -181,10 +192,10 @@ public class XxlZkClient {
 		try {
 			Stat stat = getClient().exists(path, true);
 			if (stat == null) {
-				createPatnWithParent(path);
+				createPathWithParent(path);
 				stat = getClient().exists(path, true);
 			}
-			return getClient().setData(path, data.getBytes(),stat.getVersion());
+			return getClient().setData(path, data.getBytes("UTF-8"), stat.getVersion());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new XxlConfException(e);
@@ -204,7 +215,7 @@ public class XxlZkClient {
 			if (stat != null) {
 				byte[] resultData = getClient().getData(path, true, null);
 				if (resultData != null) {
-					znodeValue = new String(resultData);
+					znodeValue = new String(resultData, "UTF-8");
 				}
 			} else {
 				logger.info(">>>>>>>>>> xxl-conf, path[{}] not found.", path);

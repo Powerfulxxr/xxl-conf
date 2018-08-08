@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.xuxueli</groupId>
         <artifactId>xxl-conf-samples</artifactId>
-        <version>1.4.2-SNAPSHOT</version>
+        <version>1.5.1-SNAPSHOT</version>
     </parent>
     <artifactId>xxl-conf-sample-springboot</artifactId>
     <packaging>jar</packaging>
@@ -48,6 +48,14 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- devtools -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <version>${spring-boot.version}</version>
+            <optional>true</optional>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -64,6 +72,10 @@
                         </goals>
                     </execution>
                 </executions>
+                <!-- devtools -->
+                <configuration>
+                    <fork>true</fork>
+                </configuration>
             </plugin>
         </plugins>
     </build>

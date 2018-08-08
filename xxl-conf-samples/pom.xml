@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.xuxueli</groupId>
 		<artifactId>xxl-conf</artifactId>
-		<version>1.4.2-SNAPSHOT</version>
+		<version>1.5.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>xxl-conf-samples</artifactId>
 	<packaging>pom</packaging>
@@ -12,6 +12,8 @@
 	<modules>
 		<module>xxl-conf-sample-spring</module>
 		<module>xxl-conf-sample-springboot</module>
+        <module>xxl-conf-sample-jfinal</module>
+		<module>xxl-conf-sample-nutz</module>
 	</modules>
 
 </project>

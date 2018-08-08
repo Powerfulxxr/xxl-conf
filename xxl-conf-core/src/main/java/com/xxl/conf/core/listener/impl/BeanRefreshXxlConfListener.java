@@ -57,8 +57,8 @@ public class BeanRefreshXxlConfListener implements XxlConfListener {
             key2BeanField.put(key, beanFieldList);
         }
         for (BeanField item: beanFieldList) {
-            if (item.getBeanName() == beanField.getBeanName() && item.getProperty()==beanField.getProperty()) {
-                return;
+            if (item.getBeanName().equals(beanField.getBeanName()) && item.getProperty().equals(beanField.getProperty())) {
+                return; // avoid repeat refresh
             }
         }
         beanFieldList.add(beanField);
@@ -71,7 +71,7 @@ public class BeanRefreshXxlConfListener implements XxlConfListener {
         List<BeanField> beanFieldList = key2BeanField.get(key);
         if (beanFieldList!=null && beanFieldList.size()>0) {
             for (BeanField beanField: beanFieldList) {
-                XxlConfFactory.refreshBeanField(beanField, value);
+                XxlConfFactory.refreshBeanField(beanField, value, null);
             }
         }
     }

@@ -11,9 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,14 +29,14 @@ public class XxlConfLocalCacheConf {
     private static Cache<String, CacheNode> xxlConfLocalCache = null;
     private static Thread refreshThread;
     private static boolean refreshThreadStop = false;
-    private static void init(){
+    public static void init(){
         // cacheManager
         cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build(true);		// default use ehcche.xml under src
 
         // xxlConfLocalCache
         xxlConfLocalCache = cacheManager.createCache("xxlConfLocalCache",
                 CacheConfigurationBuilder
-                        .newCacheConfigurationBuilder(String.class, CacheNode.class, ResourcePoolsBuilder.heap(1000))	// .withExpiry、.withEvictionAdvisor （default lru）
+                        .newCacheConfigurationBuilder(String.class, CacheNode.class, ResourcePoolsBuilder.heap(100000))	// .withExpiry、.withEvictionAdvisor （default lru）
         );
 
         // refresh thread
@@ -49,10 +47,12 @@ public class XxlConfLocalCacheConf {
                     try {
                         TimeUnit.SECONDS.sleep(60);
                         reloadAll();
-                        logger.info(">>>>>>>>>> xxl-conf, refresh thread reloadAll success.");
+                        logger.info(">>>>>>>>>> xxl-conf, refresh thread reload all success.");
                     } catch (Exception e) {
-                        logger.error(">>>>>>>>>> xxl-conf, refresh thread error.");
-                        logger.error(e.getMessage(), e);
+                        if (!refreshThreadStop) {
+                            logger.error(">>>>>>>>>> xxl-conf, refresh thread error.");
+                            logger.error(e.getMessage(), e);
+                        }
                     }
                 }
                 logger.info(">>>>>>>>>> xxl-conf, refresh thread stoped.");
@@ -62,9 +62,6 @@ public class XxlConfLocalCacheConf {
         refreshThread.start();
 
         logger.info(">>>>>>>>>> xxl-conf, XxlConfLocalCacheConf init success.");
-    }
-    static {
-        init();
     }
 
     /**
@@ -117,7 +114,7 @@ public class XxlConfLocalCacheConf {
             Cache.Entry<String, CacheNode> item = iterator.next();
             keySet.add(item.getKey());
         }
-        if (keySet.size() > 1) {
+        if (keySet.size() > 0) {
             for (String key: keySet) {
                 String zkData = XxlConfZkConf.get(key);
 
@@ -129,7 +126,18 @@ public class XxlConfLocalCacheConf {
                 }
 
             }
+
+            // write mirror
+            Map<String, String> mirrorConfData = new HashMap<>();
+            for (String key: keySet) {
+                CacheNode existNode = xxlConfLocalCache.get(key);
+                // collect mirror data
+                mirrorConfData.put(key, existNode.getValue()!=null?existNode.getValue():"");
+            }
+            XxlConfMirrorConf.writeConfMirror(mirrorConfData);
+
         }
+
     }
 
     /**
